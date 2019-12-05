@@ -36,5 +36,6 @@ sysinfo.txt
 *.unitypackage
 
 Assets/Plugins
+Assets/StreamingAssets
 
 
