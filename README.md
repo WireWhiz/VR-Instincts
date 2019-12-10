@@ -3,7 +3,7 @@ An open source alternative to VRTK that aims to make VR instinctively easy for b
 
 ### Downloading
 You can find the [latest release here](https://github.com/WireWhiz/VR-Instincts/releases).
-When you download the .unitypackage or clone the git you will need to import [the SteamVR plugin](https://assetstore.unity.com/packages/tools/integration/steamvr-plugin-32647?aid=1011l8xVZ) from the asset store.
+When you download the .unitypackage or clone the git you will need to import [the SteamVR plugin](https://assetstore.unity.com/packages/tools/integration/steamvr-plugin-32647?aid=1011l8xVZ) from the asset store to get it to work.
 
 ### Support
 We have a [discord here](https://discord.gg/mycPJDu)
