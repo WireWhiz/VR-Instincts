@@ -8,6 +8,7 @@ public class Interactable : MonoBehaviour
     public SteamVR_Input_Sources Hand;
     public bool gripped;
     public bool SecondGripped;
+    public GameObject GrippedBy;
     void start()
     {
         if (gameObject.tag != "Grabbable") {

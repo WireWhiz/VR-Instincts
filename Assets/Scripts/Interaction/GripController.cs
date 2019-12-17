@@ -14,13 +14,13 @@ public class GripController : MonoBehaviour
 
     private GameObject ConnectedObject;
     private Transform OffsetObject;
-    private bool SecondGrip;
+    private bool DomanantGrip;
     private void Update()
     {
 
         if (ConnectedObject != null )
         {
-            if (!SecondGrip)
+            if (DomanantGrip || !ConnectedObject.GetComponent<Interactable>().SecondGripped)
             {
 
 
@@ -29,15 +29,15 @@ public class GripController : MonoBehaviour
                     grabber.FixedJoint.connectedBody = null;
                     grabber.StrongGrip.connectedBody = null;
 
-                    ConnectedObject.transform.position = Vector3.MoveTowards(ConnectedObject.transform.position, transform.position - ConnectedObject.transform.rotation * OffsetObject.localPosition, .25f);
-                    ConnectedObject.transform.rotation = Quaternion.RotateTowards(ConnectedObject.transform.rotation, transform.rotation * Quaternion.Inverse(OffsetObject.localRotation), 10);
+                    ConnectedObject.transform.position = Vector3.MoveTowards(ConnectedObject.transform.position, transform.position - ConnectedObject.transform.rotation * OffsetObject.GetComponent<GrabPoint>().Offset, .25f);
+                    ConnectedObject.transform.rotation = Quaternion.RotateTowards(ConnectedObject.transform.rotation, transform.rotation*Quaternion.Inverse( OffsetObject.GetComponent<GrabPoint>().RotationOffset), 10);
                     grabber.FixedJoint.connectedBody = ConnectedObject.GetComponent<Rigidbody>();
                 }
                 else if (ConnectedObject.GetComponent<Interactable>().touchCount > 0|| ConnectedObject.GetComponent<Interactable>().SecondGripped)
                 {
 
                     grabber.FixedJoint.connectedBody = null;
-                    grabber.StrongGrip.connectedAnchor = OffsetObject.localPosition;
+                    grabber.StrongGrip.connectedAnchor = OffsetObject.GetComponent<GrabPoint>().Offset;
                     grabber.StrongGrip.connectedBody = ConnectedObject.GetComponent<Rigidbody>();
 
                 }else if(ConnectedObject.GetComponent<Interactable>().touchCount < 0)
@@ -46,21 +46,11 @@ public class GripController : MonoBehaviour
                 }
                 
             }
-            else if (SecondGrip)
+            else
             {
-                
-                if(!ConnectedObject.GetComponent<Interactable>().gripped)
-                {
-                    grabber.FixedJoint.connectedBody = null;
-                    grabber.StrongGrip.connectedAnchor = OffsetObject.localPosition;
-                    grabber.StrongGrip.connectedBody = ConnectedObject.GetComponent<Rigidbody>();
-                }
-                else
-                {
-                    grabber.FixedJoint.connectedBody = null;
-                    grabber.StrongGrip.connectedBody = null;
-                    grabber.WeakGrip.connectedBody = ConnectedObject.GetComponent<Rigidbody>();
-                }
+                grabber.FixedJoint.connectedBody = null;
+                grabber.StrongGrip.connectedBody = null;
+                grabber.WeakGrip.connectedBody = ConnectedObject.GetComponent<Rigidbody>();
             }
             if (ToggleGripButton.GetStateUp(Hand))
             {
@@ -74,10 +64,10 @@ public class GripController : MonoBehaviour
             if (grabber.ClosestGrabbable() && PreviewSkeleton)
             {
                 PreviewSkeleton.transform.gameObject.SetActive(true);
-                OffsetObject =grabber.ClosestGrabbable().transform;
+                OffsetObject = grabber.ClosestGrabbable().transform;
                 if (grabber.ClosestGrabbable().GetComponent<SteamVR_Skeleton_Poser>())
                 {
-                    if (!OffsetObject.GetComponent<GrabPoint>().SubGrip && !OffsetObject.transform.parent.GetComponent<Interactable>().gripped || OffsetObject.GetComponent<GrabPoint>().SubGrip && OffsetObject.transform.parent.GetComponent<Interactable>().gripped)
+                    if (!OffsetObject.GetComponent<GrabPoint>().Gripped)
                     {
                         PreviewSkeleton.transform.SetParent(OffsetObject, false);
                         PreviewSkeleton.BlendToPoser(OffsetObject.GetComponent<SteamVR_Skeleton_Poser>(), 0f);
@@ -100,19 +90,31 @@ public class GripController : MonoBehaviour
         if (NewObject != null)
         {
             OffsetObject = grabber.ClosestGrabbable().transform;
-            ConnectedObject = OffsetObject.transform.parent.gameObject;//find the Closest Grabbable and set it to the connected object
+            ConnectedObject = OffsetObject.GetComponent<GrabPoint>().ParentInteractable.gameObject;//find the Closest Grabbable and set it to the connected object
             ConnectedObject.GetComponent<Rigidbody>().useGravity = false;
+
+            OffsetObject.GetComponent<GrabPoint>().Gripped = true;
             if (ConnectedObject.GetComponent<Interactable>().gripped)
             {
-                SecondGrip = true;
                 ConnectedObject.GetComponent<Interactable>().SecondGripped = true;
+                if (OffsetObject.GetComponent<GrabPoint>().HelperGrip)
+                {
+                    DomanantGrip = false;
+                    grabber.WeakGrip.connectedBody = ConnectedObject.GetComponent<Rigidbody>();
+                    grabber.WeakGrip.connectedAnchor = OffsetObject.GetComponent<GrabPoint>().Offset;
+                }
                 grabber.WeakGrip.connectedBody = ConnectedObject.GetComponent<Rigidbody>();
-                grabber.WeakGrip.connectedAnchor = OffsetObject.localPosition;
+                grabber.WeakGrip.connectedAnchor = OffsetObject.GetComponent<GrabPoint>().Offset;
             }
             else
             {
                 ConnectedObject.GetComponent<Interactable>().Hand = Hand;
                 ConnectedObject.GetComponent<Interactable>().gripped = true;
+                if (!OffsetObject.GetComponent<GrabPoint>().HelperGrip)
+                {
+                    DomanantGrip = true;
+                    ConnectedObject.GetComponent<Interactable>().GrippedBy = transform.parent.gameObject;
+                }
             }
             if (OffsetObject.GetComponent<SteamVR_Skeleton_Poser>()&&HandSkeleton)
             {
@@ -131,16 +133,17 @@ public class GripController : MonoBehaviour
         ConnectedObject.GetComponent<Rigidbody>().velocity = position.GetVelocity(Hand) + transform.parent.GetComponent<Rigidbody>().velocity;
         ConnectedObject.GetComponent<Rigidbody>().angularVelocity = position.GetAngularVelocity(Hand) + transform.parent.GetComponent<Rigidbody>().angularVelocity;
         ConnectedObject.GetComponent<Rigidbody>().useGravity = true;
-        if (!SecondGrip)
+        if (!ConnectedObject.GetComponent<Interactable>().SecondGripped)
         {
             
             ConnectedObject.GetComponent<Interactable>().gripped = false;
-            
+
+            ConnectedObject.GetComponent<Interactable>().GrippedBy =null;
+
         }
         else
         {
             ConnectedObject.GetComponent<Interactable>().SecondGripped = false;
-            SecondGrip = false;
         }
         
         ConnectedObject = null;
@@ -149,7 +152,7 @@ public class GripController : MonoBehaviour
             HandSkeleton.transform.SetParent(transform, false);
             HandSkeleton.BlendToSkeleton();
         }
-
+        OffsetObject.GetComponent<GrabPoint>().Gripped = false;
         OffsetObject = null;
     }
     

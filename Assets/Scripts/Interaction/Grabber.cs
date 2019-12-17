@@ -15,17 +15,14 @@ public class Grabber : MonoBehaviour
     {
         if (other.GetComponent<GrabPoint>())
         {
-            Debug.Log("It didn't crash!");
-            if (other.GetComponent<GrabPoint>().SubGrip && other.transform.parent.GetComponent<Interactable>().gripped)
+            //Debug.Log("It didn't crash!");
+            if (!other.GetComponent<GrabPoint>().Gripped)
             {
                 NearObjects.Add(other.gameObject);
             }
-            else if (!other.GetComponent<GrabPoint>().SubGrip && !other.transform.parent.GetComponent<Interactable>().gripped)
-            {
-                NearObjects.Add(other.gameObject);
-            }
+            
         }
-        Debug.Log(NearObjects);
+        //Debug.Log(NearObjects);
     }
     void OnTriggerExit(Collider other)
     {
@@ -42,10 +39,13 @@ public class Grabber : MonoBehaviour
         {
             foreach (GameObject GameObj in NearObjects)
             {
-                if ((GameObj.transform.position - transform.position).sqrMagnitude < Distance)
+                if (!GameObj.GetComponent<GrabPoint>().RestrictByRotation || GameObj.GetComponent<GrabPoint>().RotationLimit > Quaternion.Angle(transform.rotation, GameObj.transform.rotation))
                 {
-                    ClosestGameObj = GameObj;
-                    Distance = (GameObj.transform.position - transform.position).sqrMagnitude;
+                    if ((GameObj.transform.position - transform.position).sqrMagnitude < Distance)
+                    {
+                        ClosestGameObj = GameObj;
+                        Distance = (GameObj.transform.position - transform.position).sqrMagnitude;
+                    }
                 }
             }
         }
